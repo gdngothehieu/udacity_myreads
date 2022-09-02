@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import BookCard from "./BookCard.js";
-import { get, getAll, update, search } from "./BooksAPI.js";
+import { get, getAll, update, search, addBook } from "./BooksAPI.js";
 
-const SearchBook = () => {
+const SearchBook = ({ allBooks, setAllBooks, addBookSearch, ...props }) => {
   const [bookInput, setBookInput] = useState("");
   const [bookData, setBookData] = useState("");
   useEffect(() => {
+    // Get Book  Data using API
     const getData = async () => {
       if (bookInput || bookInput === 0) {
         const maxResults = 10;
         const data = await search(bookInput, maxResults);
+        const allBooksData = await getAll();
         setBookData(data);
+        setAllBooks(allBooksData);
       }
     };
     try {
@@ -20,6 +23,7 @@ const SearchBook = () => {
       console.log(e);
     }
   }, [bookInput]);
+
   return (
     <>
       <Link style={{ textDecoration: "none" }} to="/">
@@ -47,8 +51,14 @@ const SearchBook = () => {
         }}
       >
         {bookData.length
-          ? bookData.map((book) => (
-              <BookCard book={book} bookSearch={true}></BookCard>
+          ? bookData.map((book, index) => (
+              <BookCard
+                key={index}
+                addSearchBookToShelf={addBookSearch}
+                allBooks={allBooks}
+                book={book}
+                bookSearch={true}
+              ></BookCard>
             ))
           : null}
       </div>

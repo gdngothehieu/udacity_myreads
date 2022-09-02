@@ -1,18 +1,26 @@
-import logo from "./logo.svg";
-import "./App.css";
-import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SearchBook from "./SearchBook";
 import { get, getAll, update, search } from "./BooksAPI.js";
-import BookCard from "./BookCard";
+
+import Shelf from "./Shelf";
+// This is the main app contains the state used throughout the router pages
 const App = () => {
   const [allBooks, setAllBooks] = useState([]);
   const [wantToReadBooks, setWantToReadBooks] = useState([]);
   const [readBooks, setReadBooks] = useState([]);
   const [currentlyReadingBooks, setCurrentlyReadingBooks] = useState([]);
+
   useEffect(() => {
-    const getData = async () => {
+    const getApiBooks = async () => {
       const data = await getAll();
       setAllBooks(data);
+    };
+    getApiBooks();
+  }, [allBooks]);
+  useEffect(() => {
+    const getData = async () => {
+      const data = allBooks;
       const wantToReadBooks = data?.filter(
         (book) => book.shelf === "wantToRead"
       );
@@ -30,64 +38,52 @@ const App = () => {
       console.log(e);
     }
   }, [allBooks]);
-
-  const changeShelf = async (book, shelf) => {
-    switch (shelf) {
-      case "Read":
-        shelf = "read";
-        break;
-      case "Want To Read":
-        shelf = "wantToRead";
-        break;
-      case "Currently Reading":
-        shelf = "currentlyReading";
-        break;
+  // This helps add books to shelves from search page
+  const addBookSearch = async (book, shelf) => {
+    try {
+      const responseData = await update(book, shelf);
+      let updateAllBooks = allBooks;
+      if (allBooks.find((allBook) => allBook.id === book.id)) {
+        updateAllBooks.map((allBook) => {
+          if (allBook.id === book.id) {
+            allBook.shelf = shelf;
+          }
+          return allBook;
+        });
+      } else {
+        updateAllBooks.push(book);
+      }
+      setAllBooks(updateAllBooks);
+    } catch (e) {
+      console.log(e);
     }
-    await update(book, shelf);
   };
   return (
-    <div className="App">
-      <Link style={{ textDecoration: "none" }} to="/search">
-        <div style={{ color: "green" }}>Search Book</div>
-      </Link>
-      <h2>Shelves </h2>
-
-      <div style={{ display: "flex" }}>
-        <div style={{ width: "33%" }}>
-          Currently Reading{" "}
-          {currentlyReadingBooks &&
-            currentlyReadingBooks.map((book) => {
-              return (
-                <BookCard changeShelf={changeShelf} book={book}></BookCard>
-              );
-            })}
-        </div>
-        <div style={{ width: "33%" }}>
-          Want to read
-          {wantToReadBooks &&
-            wantToReadBooks.map((book) => {
-              return (
-                <BookCard changeShelf={changeShelf} book={book}></BookCard>
-              );
-            })}
-        </div>
-        <div
-          style={{
-            width: "33%",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          Read
-          {readBooks.length &&
-            readBooks.map((book) => {
-              return (
-                <BookCard changeShelf={changeShelf} book={book}></BookCard>
-              );
-            })}
-        </div>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Shelf
+              allBooks={allBooks}
+              wantToReadBooks={wantToReadBooks}
+              readBooks={readBooks}
+              currentlyReadingBooks={currentlyReadingBooks}
+            />
+          }
+        ></Route>
+        <Route
+          path="/search"
+          element={
+            <SearchBook
+              addBookSearch={addBookSearch}
+              allBooks={allBooks}
+              setAllBooks={setAllBooks}
+            />
+          }
+        ></Route>
+      </Routes>
+    </BrowserRouter>
   );
 };
 
